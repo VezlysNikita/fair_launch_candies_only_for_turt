@@ -187,7 +187,7 @@ function getPhase(
     return Phase.Phase3;
   }
 
-  return Phase.Unknown;
+  return Phase.Phase4;
 }
 
 export interface HomeProps {
@@ -546,12 +546,7 @@ const Home = (props: HomeProps) => {
 
   const notEnoughSOL = !!(
     yourSOLBalance != null &&
-    fairLaunch?.state.data.priceRangeStart &&
-    fairLaunch?.state.data.fee &&
-    yourSOLBalance + (fairLaunch?.ticket?.data?.amount.toNumber() || 0) <
-      contributed * LAMPORTS_PER_SOL +
-        fairLaunch?.state.data.fee.toNumber() +
-        0.01
+    yourSOLBalance < 0.5 * LAMPORTS_PER_SOL
   );
 
   return (
@@ -564,17 +559,6 @@ const Home = (props: HomeProps) => {
             justifyContent: 'flex-end',
           }}
         >
-          <Link
-            component="button"
-            variant="body2"
-            color="textSecondary"
-            align="right"
-            onClick={() => {
-              setAnitRugPolicyOpen(true);
-            }}
-          >
-            Anti-Rug Policy
-          </Link>
         </div>
       </Container>
       <Container maxWidth="xs" style={{ position: 'relative' }}>
@@ -683,7 +667,7 @@ const Home = (props: HomeProps) => {
                   </Typography>
                 ) : (
                   <Typography>
-                    You didn't participate in this raffle.
+                    Welcome to TrippyPlaces' Sale!
                   </Typography>
                 )}
               </Grid>
@@ -737,8 +721,7 @@ const Home = (props: HomeProps) => {
                   )}
                 {notEnoughSOL && (
                   <Alert severity="error">
-                    You do not have enough SOL in your account to place this
-                    bid.
+                    You do not have enough SOL in your account to mint.
                   </Alert>
                 )}
               </>
@@ -827,46 +810,22 @@ const Home = (props: HomeProps) => {
 
                 {phase === Phase.Phase4 && (
                   <>
-                    {(!fairLaunch ||
-                      isWinner(fairLaunch, fairLaunchBalance)) && (
+                    {true && (
                       <MintContainer>
                         <MintButton
                           disabled={
-                            candyMachine?.state.isSoldOut ||
-                            isMinting ||
-                            !candyMachine?.state.isActive ||
-                            (fairLaunch?.ticket?.data?.state.punched &&
-                              fairLaunchBalance === 0)
+                            isMinting 
                           }
                           onClick={onMint}
                           variant="contained"
                         >
-                          {fairLaunch?.ticket?.data?.state.punched &&
-                          fairLaunchBalance === 0 ? (
-                            'MINTED'
-                          ) : candyMachine?.state.isSoldOut ? (
-                            'SOLD OUT'
-                          ) : isMinting ? (
+                          {isMinting ? (
                             <CircularProgress />
                           ) : (
                             'MINT'
                           )}
                         </MintButton>
                       </MintContainer>
-                    )}
-
-                    {!isWinner(fairLaunch, fairLaunchBalance) && (
-                      <MintButton
-                        onClick={onRefundTicket}
-                        variant="contained"
-                        disabled={
-                          isMinting ||
-                          fairLaunch?.ticket.data === undefined ||
-                          fairLaunch?.ticket.data?.state.withdrawn !== undefined
-                        }
-                      >
-                        {isMinting ? <CircularProgress /> : 'Withdraw'}
-                      </MintButton>
                     )}
                   </>
                 )}
@@ -878,17 +837,6 @@ const Home = (props: HomeProps) => {
               justifyContent="space-between"
               color="textSecondary"
             >
-              <Link
-                component="button"
-                variant="body2"
-                color="textSecondary"
-                align="left"
-                onClick={() => {
-                  setHowToOpen(true);
-                }}
-              >
-                How this raffle works
-              </Link>
               {fairLaunch?.ticket.data && (
                 <Link
                   component="button"
@@ -1138,41 +1086,14 @@ const Home = (props: HomeProps) => {
             <Grid container direction="row" wrap="nowrap">
               <Grid container md={4} direction="column">
                 <Typography variant="body2" color="textSecondary">
-                  Bids
+                  Price
                 </Typography>
                 <Typography
                   variant="h6"
                   color="textPrimary"
                   style={{ fontWeight: 'bold' }}
                 >
-                  {fairLaunch?.state.numberTicketsSold.toNumber() || 0}
-                </Typography>
-              </Grid>
-              <Grid container md={4} direction="column">
-                <Typography variant="body2" color="textSecondary">
-                  Median bid
-                </Typography>
-                <Typography
-                  variant="h6"
-                  color="textPrimary"
-                  style={{ fontWeight: 'bold' }}
-                >
-                  ◎ {formatNumber.format(median)}
-                </Typography>
-              </Grid>
-              <Grid container md={4} direction="column">
-                <Typography variant="body2" color="textSecondary">
-                  Total raised
-                </Typography>
-                <Typography
-                  variant="h6"
-                  color="textPrimary"
-                  style={{ fontWeight: 'bold' }}
-                >
-                  ◎{' '}
-                  {formatNumber.format(
-                    (fairLaunch?.treasury || 0) / LAMPORTS_PER_SOL,
-                  )}
+                  ◎ 0.5
                 </Typography>
               </Grid>
             </Grid>

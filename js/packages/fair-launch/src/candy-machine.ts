@@ -1,7 +1,7 @@
 import * as anchor from '@project-serum/anchor';
 
 import { MintLayout, TOKEN_PROGRAM_ID, Token } from '@solana/spl-token';
-import { SystemProgram } from '@solana/web3.js';
+import { SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { sendTransactionWithRetry } from './connection';
 
 import {
@@ -182,7 +182,14 @@ const getMasterEdition = async (
     )
   )[0];
 };
-
+const getTokenWallet = async function (wallet: anchor.web3.PublicKey, mint: anchor.web3.PublicKey) {
+  return (
+    await anchor.web3.PublicKey.findProgramAddress(
+      [wallet.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mint.toBuffer()],
+      SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
+    )
+  )[0];
+};
 const getMetadata = async (
   mint: anchor.web3.PublicKey,
 ): Promise<anchor.web3.PublicKey> => {
@@ -207,16 +214,11 @@ export const mintOneToken = async (
   const userTokenAccountAddress = (
     await getAtaForMint(mint.publicKey, payer)
   )[0];
-
-  const userPayingAccountAddress = (
-    await getAtaForMint(candyMachine.state.tokenMint, payer)
-  )[0];
-
+console.log(userTokenAccountAddress)
   const candyMachineAddress = candyMachine.id;
 
-  const remainingAccounts = [];
   const signers: anchor.web3.Keypair[] = [mint];
-  const instructions = [
+     const instructions = [
     anchor.web3.SystemProgram.createAccount({
       fromPubkey: payer,
       newAccountPubkey: mint.publicKey,
@@ -248,35 +250,8 @@ export const mintOneToken = async (
       [],
       1,
     ),
-  ];
+          ];     
 
-  let tokenAccount;
-  if (candyMachine.state.tokenMint) {
-    const transferAuthority = anchor.web3.Keypair.generate();
-
-    signers.push(transferAuthority);
-    remainingAccounts.push({
-      pubkey: userPayingAccountAddress,
-      isWritable: true,
-      isSigner: false,
-    });
-    remainingAccounts.push({
-      pubkey: transferAuthority.publicKey,
-      isWritable: false,
-      isSigner: true,
-    });
-
-    instructions.push(
-      Token.createApproveInstruction(
-        TOKEN_PROGRAM_ID,
-        userPayingAccountAddress,
-        transferAuthority.publicKey,
-        payer,
-        [],
-        candyMachine.state.price.toNumber(),
-      ),
-    );
-  }
   const metadataAddress = await getMetadata(mint.publicKey);
   const masterEdition = await getMasterEdition(mint.publicKey);
 
@@ -299,20 +274,10 @@ export const mintOneToken = async (
         clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
       },
       remainingAccounts:
-        remainingAccounts.length > 0 ? remainingAccounts : undefined,
+        undefined,
     }),
   );
 
-  if (tokenAccount) {
-    instructions.push(
-      Token.createRevokeInstruction(
-        TOKEN_PROGRAM_ID,
-        userPayingAccountAddress,
-        payer,
-        [],
-      ),
-    );
-  }
   try {
     return (
       await sendTransactionWithRetry(
@@ -325,6 +290,7 @@ export const mintOneToken = async (
   } catch (e) {
     console.log(e);
   }
+  
   return 'j';
 };
 
